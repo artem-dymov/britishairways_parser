@@ -15,6 +15,11 @@ import undetected_chromedriver as uc
 import config
 import time
 
+import logging
+
+from Flight import Flight
+
+
 
 class Session:
     def __init__(self):
@@ -25,14 +30,14 @@ class Session:
 
         # options.add_argument('--headless=new')
 
-        options.add_argument(user_agent)
+        # options.add_argument(user_agent)
         options.add_argument('--no-sandbox')
         options.add_argument('--start-maximized')
 
-        options.add_argument('--disable-dev-shm-usage')
+        # options.add_argument('--disable-dev-shm-usage')
         # options.add_argument('--disable-gpu')
 
-        self.driver = uc.Chrome(use_subprocess=True)
+        self.driver = uc.Chrome(use_subprocess=True, options=options)
         # self.driver = uc.Chrome()
 
         # Enabling cookie is strictly necessary
@@ -61,6 +66,12 @@ class Session:
     def make_request(self, weblink) -> None:
         self.driver.get(weblink)
 
+        # if page have this element than page is loaded
+        # if page not loaded in 180 sec, this func will return error
+        loading_marker: WebElement = WebDriverWait(self.driver, 180).until(
+            EC.presence_of_element_located((By.XPATH, '//app-flight-list'))
+        )
+
     def startup_manual_request(self):
         inputs = self.driver.find_elements(By.XPATH, '//input[@name="searchEntry"]')
 
@@ -75,14 +86,107 @@ class Session:
         time.sleep(5)
         self.driver.find_element(By.XPATH, '//div[@class="search-bar-dropdown"]/ul/li').click()
 
-        time.sleep(2)
-        # print('manual search submit start')
-        search_button = self.driver.find_element(By.XPATH, '//button[@class="primary search-button"]')
-        # print('manual search submit end')
+        search_button = WebDriverWait(self.driver, 150).until(EC.presence_of_element_located(
+            (By.XPATH, '//button[@class="primary search-button"]'))
+        )
         search_button.click()
 
+    def parse_page(self):
+        # TODO add a check if search results in not empty (in that case func must return None)
+        # flights_divs = self.driver.find_elements(By.XPATH, '//div[contains(@class, " flight ")]')
+        print('flight_divs loading')
+
+        print('stale start')
+        test_flight = WebDriverWait(self.driver, 30).until(EC.presence_of_element_located(
+            (By.XPATH, '//div[contains(@class, " flight ")]')
+        ))
+
+        # it is necessary to wait until staleness
+        WebDriverWait(self.driver, 30).until(EC.staleness_of(test_flight))
+        print('stale ended')
+        flights_divs = WebDriverWait(self.driver, 30).until(EC.presence_of_all_elements_located(
+            (By.XPATH, '//div[contains(@class, " flight ")]')
+        ))
+
+        logging.debug(f'Found {len(flights_divs)} flights.')
+
+        flights: list[Flight] = []
+        counter = 1
+
+        for flight_div in flights_divs:
+            logging.debug(f'Parsing flight {counter}')
+            flights.append(self.parse_flight(flight_div))
+
+            counter += 1
+
+        return flights
+
+    def parse_flight(self, flight_div: WebElement) -> Flight:
+        logging.debug('Parsing flight data.')
+
+        # time and location
+        departure: WebElement = WebDriverWait(flight_div, 20).until(EC.presence_of_element_located(
+            (By.XPATH, './/h4/span[1]')
+
+        ))
+        departure: str = departure.text
+
+        arrival: WebElement = WebDriverWait(flight_div, 20).until(EC.presence_of_element_located(
+            (By.XPATH, './/h4/span[2]')
+        ))
+        arrival: str = arrival.text
+
+        company: WebElement = WebDriverWait(flight_div, 20).until(EC.presence_of_element_located(
+            (By.XPATH, './/div/div/span[1]/span[1]/span[1]')
+        ))
+        company: str = company.text
+
+        stops_info: WebElement = WebDriverWait(flight_div, 20).until(EC.presence_of_element_located(
+            (By.XPATH, './/div/div/span[2]/span')
+        ))
+        stops_info: str = stops_info.text
+
+        duration_summary: WebElement = WebDriverWait(flight_div, 20).until(EC.presence_of_element_located(
+            (By.XPATH, './/div/div/span[3]')
+        ))
+        duration_summary: str = duration_summary.text
+
+        # every flight can contain several flight cards
+        # 1 flight card - 1 tariff
+        flight_cards: WebElement = WebDriverWait(flight_div, 20).until(EC.presence_of_all_elements_located(
+            (By.XPATH, './/div[@class="flight-card"]')
+        ))
+
+        tariffs = {}
+        for flight_card in flight_cards:
+            print('tariff for')
+            tariff_name = WebDriverWait(flight_card, 20).until(EC.presence_of_element_located(
+                (By.XPATH, './/div[@class="flight-card-header"]//span[1]')
+            ))
+            print(f'tariff name in parser: {tariff_name.text}')
+            # 'text' property of WebElement return empty string if element is not visible
+            # so in this case we should use 'get_attribute("textContent")' method instead
+            tariff_name = tariff_name.get_attribute('textContent')
+
+            tariff_price = WebDriverWait(flight_card, 20).until(EC.presence_of_element_located(
+                (By.XPATH, './/div[@class="flight-card-header"]//span[2]')
+            ))
+            tariff_price = tariff_price.get_attribute('textContent')
+
+            tariffs.update(
+                {tariff_name: tariff_price}
+            )
 
 
-    def parse_flight(self):
-        locations = self.driver.find_element(By.XPATH, '//main//h1').text
-        return locations
+        # not working
+        # TODO delete detailed_info_link from Flight object at all or rework
+        detailed_info_link = WebDriverWait(flight_div, 20).until(EC.presence_of_element_located(
+                (By.XPATH, './/a')
+            ))
+        detailed_info_link = detailed_info_link.get_attribute('href')
+
+        flight = Flight(departure, arrival, company, stops_info, duration_summary, tariffs, detailed_info_link)
+        print(f'flight: {flight.departure}')
+        return flight
+
+
