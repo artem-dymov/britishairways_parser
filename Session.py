@@ -10,6 +10,8 @@ from selenium.webdriver.support import expected_conditions as EC
 
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.chrome.options import Options
+from selenium.common import exceptions as selenium_exceptions
+from selenium.webdriver.remote.shadowroot import ShadowRoot
 
 import undetected_chromedriver as uc
 import config
@@ -124,17 +126,6 @@ class Session:
         return flights
 
     def parse_flight(self, flight_div: WebElement) -> Flight:
-        logging.debug('Parsing flight data.')
-        # print('\ninnerHTML')
-        # print(flight_div.get_attribute('innerHTML'))
-
-        # print('\n\nshadow_root')
-        # try:
-        #     x = flight_div.shadow_root
-        #     print(x)
-        # except Exception as e:
-        #     print('shadow error')
-        #     print(e)
 
         # time and location
         departure: WebElement = WebDriverWait(flight_div, 20).until(EC.presence_of_element_located(
@@ -171,11 +162,9 @@ class Session:
 
         tariffs = {}
         for flight_card in flight_cards:
-            print('tariff for')
             tariff_name = WebDriverWait(flight_card, 20).until(EC.presence_of_element_located(
                 (By.XPATH, './/div[@class="flight-card-header"]//span[1]')
             ))
-            print(f'tariff name in parser: {tariff_name.text}')
             # 'text' property of WebElement return empty string if element is not visible
             # so in this case we should use 'get_attribute("textContent")' method instead
             tariff_name = tariff_name.get_attribute('textContent')
@@ -198,10 +187,38 @@ class Session:
             ))
 
         flight = Flight(departure, arrival, company, stops_info, duration_summary, tariffs, open_flight_cards_btn)
-        print(f'flight: {flight.departure}')
         return flight
 
-    def submit_tariff(self, tariff_select_btn: WebElement):
-        pass
+    def select_tariff(self, select_btn: WebElement):
+
+        def click_agree_button():
+            agree_ba_button = WebDriverWait(self.driver, 25).until(EC.presence_of_element_located(
+                (By.XPATH, '//ba-button[contains(@class, "agree-button")]')
+            ))
+            # agree_ba_button2 = self.driver.find_element(By.XPATH, '//ba-button[contains(@class, "agree-button")]')
+            self.driver.execute_script('arguments[0].shadowRoot.querySelector("button").click()',
+                                       agree_ba_button)
+
+        shadow_root: ShadowRoot = select_btn.shadow_root
+
+        # this line presses on select button and opens page with specified flight and tariff
+        self.driver.execute_script('arguments[0].shadowRoot.querySelector("button").click()', select_btn)
+
+        # second page agree
+        click_agree_button()
+
+        # third page agree
+        try:
+            logging.debug('closing sign in window')
+            # sign in close
+            ba_guest_btn = WebDriverWait(self.driver, 25).until(EC.presence_of_element_located(
+                (By.XPATH, '//lib-sign-in-modal/ba-modal//ba-button[contains(@class, "guest")]')
+            ))
+            self.driver.execute_script(
+                'return arguments[0].shadowRoot.querySelector("button").click()',
+                ba_guest_btn)
+        except Exception as e:
+            print(e)
+
 
 

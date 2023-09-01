@@ -14,6 +14,8 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.remote.shadowroot import ShadowRoot
 from selenium.webdriver.chrome.options import Options
 
+from selenium.common import exceptions as selenium_exceptions
+
 import undetected_chromedriver as uc
 import config
 import time
@@ -32,6 +34,21 @@ logging.getLogger('urllib3.connectionpool').setLevel(logging.CRITICAL)
 logging.getLogger('selenium.webdriver.remote.remote_connection').setLevel(logging.CRITICAL)
 
 session = Session()
+
+
+def if_final_page() -> bool:
+    try:
+        h1: WebElement = WebDriverWait(session.driver, 10).until(EC.presence_of_element_located(
+            (By.XPATH, '//h1')
+        ))
+
+        if h1.text.strip().lower() == 'passenger details':
+            return True
+        else:
+            return False
+    except Exception:
+        return False
+
 
 time.sleep(5)
 session.startup_manual_request()
@@ -59,8 +76,6 @@ session.make_request(weblink)
 
 flights = session.parse_page()
 
-print('flights parsed')
-
 flights_data = '\n-------------------------------'
 
 counter = 1
@@ -82,32 +97,23 @@ flights_data += '\n\n-------------------------------'
 
 logging.debug(flights_data)
 
-print('waiting')
-time.sleep(15)
-
-
 count = 0
 for flight in flights:
     if count == 2:
         # flight.open_flight_cards_btn.click()
-        time.sleep(5)
+        # time.sleep(5)
         for tariff_name, tariff_value in flight.tariffs.items():
             # noinspection PyTypeChecker
             select_btn: WebElement = tariff_value[1]
-            print('clicking')
-            # getting access to #shadow-root
-            shadow_root: ShadowRoot = select_btn.shadow_root
-            # WebDriverWait(shadow_root, 20).until(EC.element_to_be_clickable(
-            #     (By.CSS_SELECTOR, 'button')
-            # )).click()
-            # shadow_root.find_element(By.CSS_SELECTOR, 'button:first-child')
 
-            # DO NOT DELETE!!!!!!!!!!!!!
-            # this line presses on select button and opens page with specified flight and tariff
-            session.driver.execute_script('arguments[0].shadowRoot.querySelector("button").click()', select_btn)
-
+            session.select_tariff(select_btn)
+            if if_final_page():
+                logging.info('Final page accessed successfuly!')
+            else:
+                logging.warning('Erorr accessing final page!!')
             break
     count += 1
+
 
 print('full end')
 time.sleep(60)
