@@ -1,4 +1,4 @@
-from session import Session
+from Session import Session
 import time
 from threading import Thread
 

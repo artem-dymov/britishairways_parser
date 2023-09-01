@@ -16,9 +16,9 @@ import config
 import time
 
 import logging
+from typing import Union
 
 from Flight import Flight
-
 
 
 class Session:
@@ -91,22 +91,24 @@ class Session:
         )
         search_button.click()
 
-    def parse_page(self):
+    # returns None if no flights available
+    def parse_page(self) -> Union[list[Flight], None]:
         # TODO add a check if search results in not empty (in that case func must return None)
         # flights_divs = self.driver.find_elements(By.XPATH, '//div[contains(@class, " flight ")]')
-        print('flight_divs loading')
 
-        print('stale start')
+        # it is necessary to wait until staleness
         test_flight = WebDriverWait(self.driver, 30).until(EC.presence_of_element_located(
             (By.XPATH, '//div[contains(@class, " flight ")]')
         ))
-
-        # it is necessary to wait until staleness
         WebDriverWait(self.driver, 30).until(EC.staleness_of(test_flight))
-        print('stale ended')
-        flights_divs = WebDriverWait(self.driver, 30).until(EC.presence_of_all_elements_located(
-            (By.XPATH, '//div[contains(@class, " flight ")]')
-        ))
+
+        try:
+            flights_divs = WebDriverWait(self.driver, 30).until(EC.presence_of_all_elements_located(
+                (By.XPATH, '//div[contains(@class, " flight ")]')
+            ))
+        except TimeoutError:
+            logging.info('No flights available.')
+            return None
 
         logging.debug(f'Found {len(flights_divs)} flights.')
 
@@ -123,6 +125,16 @@ class Session:
 
     def parse_flight(self, flight_div: WebElement) -> Flight:
         logging.debug('Parsing flight data.')
+        # print('\ninnerHTML')
+        # print(flight_div.get_attribute('innerHTML'))
+
+        # print('\n\nshadow_root')
+        # try:
+        #     x = flight_div.shadow_root
+        #     print(x)
+        # except Exception as e:
+        #     print('shadow error')
+        #     print(e)
 
         # time and location
         departure: WebElement = WebDriverWait(flight_div, 20).until(EC.presence_of_element_located(
@@ -153,7 +165,7 @@ class Session:
 
         # every flight can contain several flight cards
         # 1 flight card - 1 tariff
-        flight_cards: WebElement = WebDriverWait(flight_div, 20).until(EC.presence_of_all_elements_located(
+        flight_cards: list[WebElement] = WebDriverWait(flight_div, 20).until(EC.presence_of_all_elements_located(
             (By.XPATH, './/div[@class="flight-card"]')
         ))
 
@@ -173,20 +185,23 @@ class Session:
             ))
             tariff_price = tariff_price.get_attribute('textContent')
 
+            tariff_select_btn = WebDriverWait(flight_card, 10).until(EC.presence_of_element_located(
+                (By.XPATH, './/ba-button[contains(@class, "select-button")]')
+            ))
+
             tariffs.update(
-                {tariff_name: tariff_price}
+                {tariff_name: (tariff_price, tariff_select_btn)}
             )
 
-
-        # not working
-        # TODO delete detailed_info_link from Flight object at all or rework
-        detailed_info_link = WebDriverWait(flight_div, 20).until(EC.presence_of_element_located(
-                (By.XPATH, './/a')
+        open_flight_cards_btn = WebDriverWait(flight_div, 10).until(EC.presence_of_element_located(
+                (By.XPATH, './/ba-button[contains(@class, "flight-button")]')
             ))
-        detailed_info_link = detailed_info_link.get_attribute('href')
 
-        flight = Flight(departure, arrival, company, stops_info, duration_summary, tariffs, detailed_info_link)
+        flight = Flight(departure, arrival, company, stops_info, duration_summary, tariffs, open_flight_cards_btn)
         print(f'flight: {flight.departure}')
         return flight
+
+    def submit_tariff(self, tariff_select_btn: WebElement):
+        pass
 
 
