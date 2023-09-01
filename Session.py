@@ -127,6 +127,7 @@ class Session:
 
     def parse_flight(self, flight_div: WebElement) -> Flight:
 
+
         # time and location
         departure: WebElement = WebDriverWait(flight_div, 20).until(EC.presence_of_element_located(
             (By.XPATH, './/h4/span[1]')
