@@ -5,125 +5,245 @@ import logging
 
 import traceback
 
+from typing import List
+
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import Select
+from selenium.common import exceptions
+from selenium.webdriver.chrome.service import Service
+
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+from selenium.webdriver.remote.webelement import WebElement
+from selenium.webdriver.remote.shadowroot import ShadowRoot
+from selenium.webdriver.chrome.options import Options
+
+from selenium.common import exceptions as selenium_exceptions
+
 
 # logger = logging.getLogger('selenium.webdriver.remote.remote_connection')
 # logger.setLevel(logging.NOTSET)
 
-logging.basicConfig(level=logging.DEBUG, filename="parser.log", filemode="w",
-                    format="%(asctime)s %(levelname)s %(message)s")
+def spam_tests(iterations):
+    logging.basicConfig(level=logging.DEBUG, filename=f"parser.log", filemode="w",
+                        format="%(asctime)s %(levelname)s %(message)s")
 
-logging.getLogger('selenium.webdriver.common.service').setLevel(logging.CRITICAL)
-logging.getLogger('undetected_chromedriver.patcher').setLevel(logging.CRITICAL)
-logging.getLogger('urllib3.connectionpool').setLevel(logging.CRITICAL)
-logging.getLogger('selenium.webdriver.remote.remote_connection').setLevel(logging.CRITICAL)
+    logging.getLogger('selenium.webdriver.common.service').setLevel(logging.CRITICAL)
+    logging.getLogger('undetected_chromedriver.patcher').setLevel(logging.CRITICAL)
+    logging.getLogger('urllib3.connectionpool').setLevel(logging.CRITICAL)
+    logging.getLogger('selenium.webdriver.remote.remote_connection').setLevel(logging.CRITICAL)
 
-# format="%(asctime)s %(levelname)s %(message)s"
-loggers = logging.Logger.manager.loggerDict.keys()
-print(loggers)
+    # format="%(asctime)s %(levelname)s %(message)s"
+    loggers = logging.Logger.manager.loggerDict.keys()
 
-
-logging.info('Creating session.')
-session = Session()
-
-logging.info('Doing startup request.')
-time.sleep(5)
-session.startup_manual_request()
+    # -----------------
 
 
-origin_dest_data = ['NYC-LON_2023-09-12', 'LON-NYC_2023-09-18', 'LON-WAW_2023-09-11', 'LON-MAD_2023-09-27', 'LON-MAD_2023-10-15',
-        'LON-NYC_2023-11-11', 'NYC-WAW_2023-12-10', 'LON-NYC_2023-09-19', 'LON-NYC_2023-09-18']
-o_d_dataset = ['NYC-LON', 'LON-NYC, LON-WAW', 'WAW-LON', 'LON-MAD', 'MAD-LON', 'NYC-WAW', 'WAW-NYC']
+    logging.info('Creating session.')
+    session = Session()
 
-def create_test_onds():
-    o_d = random.choice(origin_dest_data)
-    year = '_2023-'
-
-    m = random.randint(9, 12)
-    d = random.randint(1, 30)
-    m_d = f'{m}-{d}'
-
-    onds = o_d + year + m_d
-    return onds
+    logging.info('Doing startup request.')
+    time.sleep(5)
+    session.startup_manual_request()
 
 
-test_times = []
-for i in range(1):
-    logging.info(f'\n\nTest iteration №{i}')
-    onds = create_test_onds()
+    origin_dest_data = ['NYC-LON_2023-09-12', 'LON-NYC_2023-09-18', 'LON-WAW_2023-09-11', 'LON-MAD_2023-09-27', 'LON-MAD_2023-10-15',
+            'LON-NYC_2023-11-11', 'NYC-WAW_2023-12-10', 'LON-NYC_2023-09-19', 'LON-NYC_2023-09-18']
+    o_d_dataset = ['NYC-LON', 'LON-NYC', 'LON-WAW', 'WAW-LON', 'LON-MAD', 'MAD-LON', 'NYC-WAW', 'WAW-NYC']
 
-    print(f'Created random onds: {onds}')
-    start_time = time.time()
+    # https://www.britishairways.com/travel/book/public/en_ua/flightList?onds=LON-NYC,%20LON-WAW_2023-12-4&ad=1&yad=0&ch=0&inf=0&cabin=M&flex=LOWEST&ond=1
+    def create_test_onds():
+        o_d = random.choice(o_d_dataset)
+        year = '_2023-'
 
-    logging.info('Creating weblink.')
-    weblink = session.create_search_link(onds=onds)
+        m = random.randint(9, 12)
+        d = random.randint(1, 30)
+        m_d = f'{m}-{d}'
 
-    try:
-        logging.debug(f'Request weblink: {weblink}')
-        logging.info('Making request')
-        session.make_request(weblink)
-        logging.info('Request made successfully')
-    except Exception as e:
-        logging.critical(f'Error occurred!\n{e}')
-        print('Test failed')
-        traceback.format_exc()
-        continue
-
-    try:
-        logging.info('Parsing page...')
-        flights = session.parse_page()
-        print(f'flights: {flights}')
-        logging.info('Page parsed successfully!')
+        onds = o_d + year + m_d
+        return onds
 
 
-        flights_data = '\n-------------------------------'
+    def if_book_page() -> bool:
+        try:
+            h1: WebElement = WebDriverWait(session.driver, 10).until(EC.presence_of_element_located(
+                (By.XPATH, '//h1')
+            ))
 
-        counter = 1
+            if h1.text.strip().lower() == 'passenger details':
+                return True
+            else:
+                return False
+        except Exception:
+            return False
+
+    def show_time_results(subm_fl):
+        if subm_fl:
+            subm_fl.sort()
+            subm_fl.reverse()
+
+            print('\nMAX TIME SPENDED (5 biggest)')
+            logging.info(f'MAX TIME SPENDED (5 biggest)\n{subm_fl[0]}\n{subm_fl[1]}\n'
+                         f'{subm_fl[2]}\n{subm_fl[3]}\n{subm_fl[4]}')
+
+            for i in range(5):
+                print(subm_fl[i])
+
+            sum = 0.0
+            for i in subm_fl:
+                sum += i
+
+            average = sum / len(subm_fl)
+            print(f'AVERAGE SUBMITTING TEST TIME: {average}')
+            logging.info(f'AVERAGE SUBMITTING TEST TIME: {average}\n\n')
+
+
+    test_times = {
+        'flights_parsing': [],
+        'submitting_flight': []
+    }
+    failed_tests = {
+        'flights_parsing': 0, 'submitting_flight': 0
+    }
+    for i in range(iterations):
+        logging.info(f'\n\nTest iteration №{i}')
+        onds = create_test_onds()
+
+        start_flights_parsing_time = time.time()
+
+        logging.info('Creating weblink.')
+        weblink = session.create_search_link(onds=onds)
+
+        # TEST 1
+        # Getting access to page with flights and parsing flights data
+        logging.info('\nBeginning TEST 1\n')
+
+        try:
+            logging.debug(f'Request weblink: {weblink}')
+            logging.info('Making request')
+            session.make_request(weblink)
+            logging.info('Request made successfully')
+        except Exception as e:
+            logging.critical(f'Error occurred!\n{e}')
+            print('Test failed')
+            traceback.format_exc()
+
+            failed_tests['flights_parsing'] += 1
+            failed_tests['flights_parsing'] += 1
+            continue
+
+        try:
+            logging.info('Parsing page...')
+            flights = session.parse_page()
+
+            if not flights:
+                logging.info('No flights available. Skipping this request.')
+                print('No flights available. Skipping this request.')
+                continue
+
+            print(f'flights: {flights}')
+            logging.info('Page parsed successfully!')
+
+            flights_data = '\n-------------------------------'
+
+            counter = 1
+            for flight in flights:
+                flights_data += f'\n\nFlight {counter}' \
+                                 f'\nDeparture: {flight.departure}' \
+                                 f'\nArrival: {flight.arrival}' \
+                                 f'\nCompany: {flight.company}' \
+                                 f'\nDuration summary: {flight.duration_summary}' \
+                                 f'\nStops info: {flight.stops_info}' \
+                                 f'\nTariffs: '
+
+                for tariff_name, tariff_price in flight.tariffs.items():
+                    flights_data += f'|{tariff_name} - {tariff_price}|'
+
+                counter += 1
+
+            flights_data += '\n\n-------------------------------'
+
+            logging.debug(flights_data)
+        except Exception as e:
+            logging.critical(f'Error occurred! TEST 1 FAILED!\n{e}')
+            print(e)
+            print('TEST 1 failed')
+            traceback.print_exc()
+
+            failed_tests['flights_parsing'] += 1
+            continue
+
+        flights_parsing_time = time.time() - start_flights_parsing_time
+        test_times['flights_parsing'].append(flights_parsing_time)
+
+        logging.info(f'\nFlights parsing test completed.\nTime spend in seconds: {flights_parsing_time}\n')
+        print(f'Flights parsing test completed\nTime spend in seconds: {flights_parsing_time}\n')
+
+        # TEST 2
+        # Test access to book page of flights
+
+        # choosing random flight from all flights on page to test booking
+        count = 0
+        choice_flight = random.randint(0, len(flights)-1)
+
         for flight in flights:
-            flights_data += f'\n\nFlight {counter}' \
-                             f'\nDeparture: {flight.departure}' \
-                             f'\nArrival: {flight.arrival}' \
-                             f'\nCompany: {flight.company}' \
-                             f'\nDuration summary: {flight.duration_summary}' \
-                             f'\nStops info: {flight.stops_info}' \
-                             f'\nDetailed info link: {flight.detailed_info_link}' \
-                             f'\nTariffs: '
+            if count == choice_flight:
 
-            for tariff_name, tariff_price in flight.tariffs.items():
-                flights_data += f'|{tariff_name} - {tariff_price}|'
+                # flight.open_flight_cards_btn.click()
 
-            counter += 1
+                # choosing random tariff of flight to test booking
+                tariff_count = 0
+                choice_tariff = random.randint(0, len(flight.tariffs.keys())-1)
+                for tariff_name, tariff_value in flight.tariffs.items():
+                    if tariff_count == choice_tariff:
+                        start_submitting_flight_time = time.time()
 
-        flights_data += '\n\n-------------------------------'
+                        # noinspection PyTypeChecker
+                        select_btn: WebElement = tariff_value[1]
 
-        logging.debug(flights_data)
-    except Exception as e:
-        logging.critical(f'Error occurred!\n{e}')
-        print('Test failed')
-        traceback.format_exc()
-        continue
+                        try:
+                            session.select_tariff(select_btn)
+                        except Exception as e:
+                            logging.warning(f'Error accessing book page (select_tariff func returned error)!! TEST 2 FAILED!!\n{e}')
 
-    test_time = time.time() - start_time
-    test_times.append(test_time)
+                            failed_tests['submitting_flight'] += 1
+                            continue
 
-    print('Test completed', f'\nTime spend in seconds: {test_time}','\n')
 
-print('TEST ENDED')
+                        if if_book_page():
+                            logging.info('Final page accessed successfuly!')
+                        else:
+                            logging.warning('Error accessing book page (not book page in the end)!! TEST 2 FAILED!!!')
 
-if test_times:
-    test_times.sort()
-    test_times.reverse()
+                            failed_tests['submitting_flight'] += 1
+                            continue
 
-    print('MAX TIME SPENDED (5 biggest)')
-    print(test_times)
+                        session.go_to_flights_page()
 
-    for i in range(1):
-        print(test_times[i])
+                        submitting_flight_time = time.time() - start_submitting_flight_time
+                        test_times['submitting_flight'].append(submitting_flight_time)
 
-    sum = 0.0
-    for i in test_times:
-        sum += i
+                    tariff_count += 1
+            count += 1
 
-    average = sum / len(test_times)
-    print(f'AVERAGE TEST TIME: {average}')
 
-time.sleep(200)
+    print('TEST ENDED')
+
+
+    print(test_times['submitting_flight'])
+    subm_fl = test_times['submitting_flight']
+    print('\n\nSUBMITTING FLIGHT TIME RESULTS')
+    show_time_results(subm_fl)
+
+    fl_par = test_times['flights_parsing']
+    print('\n\nPARSING FLIGHTS TIME RESULTS')
+    show_time_results(fl_par)
+
+    print(f'FAILED TESTS:\n{failed_tests}')
+
+
+if __name__ == '__main__':
+    spam_tests(20)

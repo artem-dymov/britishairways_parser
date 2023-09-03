@@ -46,6 +46,8 @@ class Session:
         self.open_homepage()
         self.enable_cookie()
 
+        self.page = 0
+
         time.sleep(1)
 
         # self.driver.tab_new(config.homepage_weblink)
@@ -65,6 +67,17 @@ class Session:
         weblink = config.base_request_link + params
         return weblink
 
+    def waiting_when_page_loaded(self) -> bool:
+        try:
+            element_if_page_loaded = WebDriverWait(self.driver, 90).until(EC.presence_of_element_located(
+                (By.XPATH, '//ba-button[contains(@class, "search")]')
+            ))
+
+            return True
+        except TimeoutError:
+            logging.critical('PAGE LOADING ERROR, TIME ERROR')
+            return False
+
     def make_request(self, weblink) -> None:
         self.driver.get(weblink)
 
@@ -73,43 +86,81 @@ class Session:
         loading_marker: WebElement = WebDriverWait(self.driver, 180).until(
             EC.presence_of_element_located((By.XPATH, '//app-flight-list'))
         )
+        self.page = 1
 
     def startup_manual_request(self):
-        inputs = self.driver.find_elements(By.XPATH, '//input[@name="searchEntry"]')
+        while True:
+            try:
+                self.open_homepage()
 
-        from_input = inputs[0]
-        to_input = inputs[1]
+                inputs = WebDriverWait(self.driver, 30).until(EC.presence_of_all_elements_located(
+                    (By.XPATH, '//input[@name="searchEntry"]')
+                ))
 
-        from_input.send_keys('LIS')
-        time.sleep(5)
-        self.driver.find_element(By.XPATH, '//div[@class="search-bar-dropdown"]/ul/li').click()
+                from_input = inputs[0]
+                to_input = inputs[1]
 
-        to_input.send_keys('NYC')
-        time.sleep(5)
-        self.driver.find_element(By.XPATH, '//div[@class="search-bar-dropdown"]/ul/li').click()
+                from_input.send_keys('LIS')
+                WebDriverWait(self.driver, 30).until(EC.presence_of_element_located(
+                    (By.XPATH, '//div[@class="search-bar-dropdown"]/ul/li')
+                )).click()
 
-        search_button = WebDriverWait(self.driver, 150).until(EC.presence_of_element_located(
-            (By.XPATH, '//button[@class="primary search-button"]'))
-        )
-        search_button.click()
+                to_input.send_keys('NYC')
+                WebDriverWait(self.driver, 30).until(EC.presence_of_element_located(
+                    (By.XPATH, '//div[@class="search-bar-dropdown"]/ul/li')
+                )).click()
+
+                search_button = WebDriverWait(self.driver, 150).until(EC.presence_of_element_located(
+                    (By.XPATH, '//button[@class="primary search-button"]'))
+                )
+                search_button.click()
+            except TimeoutError:
+                continue
+
+            try:
+                self.waiting_when_page_loaded()
+                break
+            except TimeoutError:
+                continue
 
     # returns None if no flights available
     def parse_page(self) -> Union[list[Flight], None]:
         # TODO add a check if search results in not empty (in that case func must return None)
         # flights_divs = self.driver.find_elements(By.XPATH, '//div[contains(@class, " flight ")]')
 
+        def if_flight_available() -> bool:
+            try:
+                WebDriverWait(self.driver, 15).until(EC.presence_of_element_located(
+                    (By.XPATH, '//app-flight-list-results')
+                ))
+                return True
+            except selenium_exceptions.NoSuchElementException:
+                return False
+
+        if self.waiting_when_page_loaded():
+            if not if_flight_available():
+                self.driver.refresh()
+                if self.waiting_when_page_loaded():
+                    if not if_flight_available():
+                        return None
+                else:
+                    raise selenium_exceptions.TimeoutException
+        else:
+            raise selenium_exceptions.TimeoutException
+
+
         # it is necessary to wait until staleness
-        test_flight = WebDriverWait(self.driver, 30).until(EC.presence_of_element_located(
+        test_flight = WebDriverWait(self.driver, 20).until(EC.presence_of_element_located(
             (By.XPATH, '//div[contains(@class, " flight ")]')
         ))
-        WebDriverWait(self.driver, 30).until(EC.staleness_of(test_flight))
+        # WebDriverWait(self.driver, 100).until(EC.staleness_of(test_flight))
 
         try:
-            flights_divs = WebDriverWait(self.driver, 30).until(EC.presence_of_all_elements_located(
+            flights_divs: list[WebElement] = WebDriverWait(self.driver, 20).until(EC.presence_of_all_elements_located(
                 (By.XPATH, '//div[contains(@class, " flight ")]')
             ))
         except TimeoutError:
-            logging.info('No flights available.')
+            logging.warning('No flights available.')
             return None
 
         logging.debug(f'Found {len(flights_divs)} flights.')
@@ -122,11 +173,10 @@ class Session:
             flights.append(self.parse_flight(flight_div))
 
             counter += 1
-
         return flights
 
-    def parse_flight(self, flight_div: WebElement) -> Flight:
-
+    @staticmethod
+    def parse_flight(flight_div: WebElement) -> Flight:
 
         # time and location
         departure: WebElement = WebDriverWait(flight_div, 20).until(EC.presence_of_element_located(
@@ -186,29 +236,28 @@ class Session:
         open_flight_cards_btn = WebDriverWait(flight_div, 10).until(EC.presence_of_element_located(
                 (By.XPATH, './/ba-button[contains(@class, "flight-button")]')
             ))
-
         flight = Flight(departure, arrival, company, stops_info, duration_summary, tariffs, open_flight_cards_btn)
         return flight
 
     def select_tariff(self, select_btn: WebElement):
-
         def click_agree_button():
-            agree_ba_button = WebDriverWait(self.driver, 25).until(EC.presence_of_element_located(
+            agree_ba_button = WebDriverWait(self.driver, 60).until(EC.presence_of_element_located(
                 (By.XPATH, '//ba-button[contains(@class, "agree-button")]')
             ))
             # agree_ba_button2 = self.driver.find_element(By.XPATH, '//ba-button[contains(@class, "agree-button")]')
             self.driver.execute_script('arguments[0].shadowRoot.querySelector("button").click()',
                                        agree_ba_button)
-
-        shadow_root: ShadowRoot = select_btn.shadow_root
+        # shadow_root: ShadowRoot = WebDriverWait(select_btn, 30).until(EC.presence_of_element_located())
+        # shadow_root: ShadowRoot = select_btn.shadow_root
 
         # this line presses on select button and opens page with specified flight and tariff
         self.driver.execute_script('arguments[0].shadowRoot.querySelector("button").click()', select_btn)
+        self.page = 2
 
         # second page agree
         click_agree_button()
+        self.page = 3
 
-        # third page agree
         try:
             logging.debug('closing sign in window')
             # sign in close
@@ -221,5 +270,11 @@ class Session:
         except Exception as e:
             print(e)
 
+    def go_back(self):
+        self.driver.back()
+
+    def go_to_flights_page(self):
+        while 'flightList' not in self.driver.current_url:
+            self.driver.back()
 
 

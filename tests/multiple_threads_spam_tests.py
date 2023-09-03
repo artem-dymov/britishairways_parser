@@ -1,32 +1,48 @@
 from Session import Session
 import time
+import random
+import logging
+
+import traceback
+
+from typing import List
+
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import Select
+from selenium.common import exceptions
+from selenium.webdriver.chrome.service import Service
+
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+from selenium.webdriver.remote.webelement import WebElement
+from selenium.webdriver.remote.shadowroot import ShadowRoot
+from selenium.webdriver.chrome.options import Options
+
+from selenium.common import exceptions as selenium_exceptions
+
 from threading import Thread
 
-# -------
-def parse_tab():
-    session = Session()
-    session.startup_manual_request()
-    time.sleep(100)
-    weblink = session.create_search_link(onds='MAD-NYC_2023-09-25')
-    session.make_request(weblink)
-    time.sleep(16)
-    print(session.parse_flight())
-    time.sleep(180)
+from tests.custom_tests import spam_tests
 
 # Создаем потоки для каждой вкладки
 threads = []
+
 for i in range(4):
-    thread = Thread(target=parse_tab)
+    thread = Thread(target=spam_tests, args=(i,))
     threads.append(thread)
 
 # Запускаем потоки
 for thread in threads:
     thread.start()
-    time.sleep(30)
+    time.sleep(2)
 
 # Ждем завершения всех потоков
 for thread in threads:
     thread.join()
+
 
 # session = Session()
 
@@ -74,6 +90,4 @@ for thread in threads:
 # search_link = session.create_search_link('LON-NYC_2023-09-18')
 # session.make_request(search_link)
 #
-print('ended')
-time.sleep(2000)
 

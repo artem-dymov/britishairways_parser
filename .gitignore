@@ -1,2 +1,4 @@
 parser.log
 venv/
+.idea/
+*.log
