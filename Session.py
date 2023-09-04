@@ -31,13 +31,17 @@ class Session:
         options = Options()
 
         # options.add_argument('--headless=new')
+        # options.add_argument('--headless')
 
         # options.add_argument(user_agent)
         options.add_argument('--no-sandbox')
         options.add_argument('--start-maximized')
 
-        # options.add_argument('--disable-dev-shm-usage')
-        # options.add_argument('--disable-gpu')
+        options.add_argument('--disable-dev-shm-usage')
+        options.add_argument('--no-proxy-server')
+
+        # options.add_argument("--proxy-server='direct://'")
+        # options.add_argument("--proxy-bypass-list=*")
 
         self.driver = uc.Chrome(use_subprocess=True, options=options)
         # self.driver = uc.Chrome()
@@ -93,7 +97,8 @@ class Session:
             try:
                 self.open_homepage()
 
-                inputs = WebDriverWait(self.driver, 30).until(EC.presence_of_all_elements_located(
+                # wait until 2 entry forms on homepage will be loaded
+                inputs = WebDriverWait(self.driver, 60).until(EC.presence_of_all_elements_located(
                     (By.XPATH, '//input[@name="searchEntry"]')
                 ))
 
@@ -101,7 +106,7 @@ class Session:
                 to_input = inputs[1]
 
                 from_input.send_keys('LIS')
-                WebDriverWait(self.driver, 30).until(EC.presence_of_element_located(
+                WebDriverWait(self.driver, 120).until(EC.presence_of_element_located(
                     (By.XPATH, '//div[@class="search-bar-dropdown"]/ul/li')
                 )).click()
 
@@ -114,14 +119,21 @@ class Session:
                     (By.XPATH, '//button[@class="primary search-button"]'))
                 )
                 search_button.click()
-            except TimeoutError:
+            except selenium_exceptions.TimeoutException:
+                logging.warning('Restarting startup_manual_request')
+                print('Restarting startup_manual_request')
                 continue
 
             try:
                 self.waiting_when_page_loaded()
                 break
-            except TimeoutError:
+            except selenium_exceptions.TimeoutException:
+                logging.warning('Restarting startup_manual_request')
+                print('Restarting startup_manual_request')
                 continue
+
+        print('\nSTARTUP STUF SUCCESSFUL\n')
+        logging.info('\nSTARTUP STUF SUCCESSFUL\n')
 
     # returns None if no flights available
     def parse_page(self) -> Union[list[Flight], None]:

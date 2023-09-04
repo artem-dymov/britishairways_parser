@@ -25,69 +25,20 @@ from selenium.common import exceptions as selenium_exceptions
 
 from threading import Thread
 
-from tests.custom_tests import spam_tests
+from tests.spam_tests import spam_tests
 
 # Создаем потоки для каждой вкладки
 threads = []
 
-for i in range(4):
-    thread = Thread(target=spam_tests, args=(i,))
+for i in range(6):
+    thread = Thread(target=spam_tests, args=(50,))
     threads.append(thread)
 
 # Запускаем потоки
 for thread in threads:
     thread.start()
-    time.sleep(2)
+    time.sleep(10)
 
 # Ждем завершения всех потоков
 for thread in threads:
     thread.join()
-
-
-# session = Session()
-
-# time.sleep(5)
-# session.startup_manual_request()
-# time.sleep(20)
-# search_link = session.create_search_link('MAD-LHR_2023-09-10')
-# session.make_request(search_link)
-# time.sleep(30)
-# print(session.parse_flight())
-#
-# time.sleep(20)
-# search_link = session.create_search_link('NYC-LON_2023-09-12')
-# session.make_request(search_link)
-#
-# time.sleep(20)
-# search_link = session.create_search_link('LON-NYC_2023-09-18')
-# session.make_request(search_link)
-#
-# time.sleep(20)
-# search_link = session.create_search_link('LON-WAW_2023-09-11')
-# session.make_request(search_link)
-#
-# time.sleep(20)
-# search_link = session.create_search_link('LON-MAD_2023-09-27')
-# session.make_request(search_link)
-#
-# time.sleep(20)
-# search_link = session.create_search_link('LON-MAD_2023-10-15')
-# session.make_request(search_link)
-#
-# time.sleep(20)
-# search_link = session.create_search_link('LON-NYC_2023-11-11')
-# session.make_request(search_link)
-#
-# time.sleep(20)
-# search_link = session.create_search_link('NYC-WAW_2023-12-10')
-# session.make_request(search_link)
-#
-# time.sleep(20)
-# search_link = session.create_search_link('LON-NYC_2023-09-19')
-# session.make_request(search_link)
-#
-# time.sleep(20)
-# search_link = session.create_search_link('LON-NYC_2023-09-18')
-# session.make_request(search_link)
-#
-

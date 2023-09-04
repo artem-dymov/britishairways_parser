@@ -50,8 +50,6 @@ def spam_tests(iterations):
     session.startup_manual_request()
 
 
-    origin_dest_data = ['NYC-LON_2023-09-12', 'LON-NYC_2023-09-18', 'LON-WAW_2023-09-11', 'LON-MAD_2023-09-27', 'LON-MAD_2023-10-15',
-            'LON-NYC_2023-11-11', 'NYC-WAW_2023-12-10', 'LON-NYC_2023-09-19', 'LON-NYC_2023-09-18']
     o_d_dataset = ['NYC-LON', 'LON-NYC', 'LON-WAW', 'WAW-LON', 'LON-MAD', 'MAD-LON', 'NYC-WAW', 'WAW-NYC']
 
     # https://www.britishairways.com/travel/book/public/en_ua/flightList?onds=LON-NYC,%20LON-WAW_2023-12-4&ad=1&yad=0&ch=0&inf=0&cabin=M&flex=LOWEST&ond=1
@@ -60,7 +58,7 @@ def spam_tests(iterations):
         year = '_2023-'
 
         m = random.randint(9, 12)
-        d = random.randint(1, 30)
+        d = random.randint(4, 30)
         m_d = f'{m}-{d}'
 
         onds = o_d + year + m_d
@@ -97,8 +95,8 @@ def spam_tests(iterations):
                 sum += i
 
             average = sum / len(subm_fl)
-            print(f'AVERAGE SUBMITTING TEST TIME: {average}')
-            logging.info(f'AVERAGE SUBMITTING TEST TIME: {average}\n\n')
+            print(f'AVERAGE TEST TIME: {average}')
+            logging.info(f'AVERAGE TEST TIME: {average}\n\n')
 
 
     test_times = {
@@ -212,7 +210,6 @@ def spam_tests(iterations):
                             failed_tests['submitting_flight'] += 1
                             continue
 
-
                         if if_book_page():
                             logging.info('Final page accessed successfuly!')
                         else:
@@ -228,6 +225,8 @@ def spam_tests(iterations):
 
                     tariff_count += 1
             count += 1
+
+        time.sleep(5)
 
 
     print('TEST ENDED')
@@ -246,4 +245,4 @@ def spam_tests(iterations):
 
 
 if __name__ == '__main__':
-    spam_tests(20)
+    spam_tests(100)
