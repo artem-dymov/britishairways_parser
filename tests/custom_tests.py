@@ -157,10 +157,10 @@ def spam_tests():
                                  f'\nCompany: {flight.company}' \
                                  f'\nDuration summary: {flight.duration_summary}' \
                                  f'\nStops info: {flight.stops_info}' \
-                                 f'\nTariffs: '
+                                 f'\nfares: '
 
-                for tariff_name, tariff_price in flight.tariffs.items():
-                    flights_data += f'|{tariff_name} - {tariff_price}|'
+                for fare_name, fare_price in flight.fares.items():
+                    flights_data += f'|{fare_name} - {fare_price}|'
 
                 counter += 1
 
@@ -194,20 +194,20 @@ def spam_tests():
 
                 # flight.open_flight_cards_btn.click()
 
-                # choosing random tariff of flight to test booking
-                tariff_count = 0
-                choice_tariff = random.randint(0, len(flight.tariffs.keys())-1)
-                for tariff_name, tariff_value in flight.tariffs.items():
-                    if tariff_count == choice_tariff:
+                # choosing random fare of flight to test booking
+                fare_count = 0
+                choice_fare = random.randint(0, len(flight.fares.keys())-1)
+                for fare_name, fare_value in flight.fares.items():
+                    if fare_count == choice_fare:
                         start_submitting_flight_time = time.time()
 
                         # noinspection PyTypeChecker
-                        select_btn: WebElement = tariff_value[1]
+                        select_btn: WebElement = fare_value[1]
 
                         try:
-                            session.select_tariff(select_btn)
+                            session.select_fare(select_btn)
                         except Exception as e:
-                            logging.warning(f'Error accessing book page (select_tariff func returned error)!! TEST 2 FAILED!!\n{e}')
+                            logging.warning(f'Error accessing book page (select_fare func returned error)!! TEST 2 FAILED!!\n{e}')
 
                             failed_tests['submitting_flight'] += 1
                             continue
@@ -227,7 +227,7 @@ def spam_tests():
                         submitting_flight_time = time.time() - start_submitting_flight_time
                         test_times['submitting_flight'].append(submitting_flight_time)
 
-                    tariff_count += 1
+                    fare_count += 1
             count += 1
 
     print('TEST ENDED')

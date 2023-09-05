@@ -218,40 +218,40 @@ class Session:
         duration_summary: str = duration_summary.text
 
         # every flight can contain several flight cards
-        # 1 flight card - 1 tariff
+        # 1 flight card - 1 fare
         flight_cards: list[WebElement] = WebDriverWait(flight_div, 20).until(EC.presence_of_all_elements_located(
             (By.XPATH, './/div[@class="flight-card"]')
         ))
 
-        tariffs = {}
+        fares = {}
         for flight_card in flight_cards:
-            tariff_name = WebDriverWait(flight_card, 20).until(EC.presence_of_element_located(
+            fare_name = WebDriverWait(flight_card, 20).until(EC.presence_of_element_located(
                 (By.XPATH, './/div[@class="flight-card-header"]//span[1]')
             ))
             # 'text' property of WebElement return empty string if element is not visible
             # so in this case we should use 'get_attribute("textContent")' method instead
-            tariff_name = tariff_name.get_attribute('textContent')
+            fare_name = fare_name.get_attribute('textContent')
 
-            tariff_price = WebDriverWait(flight_card, 20).until(EC.presence_of_element_located(
+            fare_price = WebDriverWait(flight_card, 20).until(EC.presence_of_element_located(
                 (By.XPATH, './/div[@class="flight-card-header"]//span[2]')
             ))
-            tariff_price = tariff_price.get_attribute('textContent')
+            fare_price = fare_price.get_attribute('textContent')
 
-            tariff_select_btn = WebDriverWait(flight_card, 10).until(EC.presence_of_element_located(
+            fare_select_btn = WebDriverWait(flight_card, 10).until(EC.presence_of_element_located(
                 (By.XPATH, './/ba-button[contains(@class, "select-button")]')
             ))
 
-            tariffs.update(
-                {tariff_name: (tariff_price, tariff_select_btn)}
+            fares.update(
+                {fare_name: (fare_price, fare_select_btn)}
             )
 
         open_flight_cards_btn = WebDriverWait(flight_div, 10).until(EC.presence_of_element_located(
                 (By.XPATH, './/ba-button[contains(@class, "flight-button")]')
             ))
-        flight = Flight(departure, arrival, company, stops_info, duration_summary, tariffs, open_flight_cards_btn)
+        flight = Flight(departure, arrival, company, stops_info, duration_summary, fares, open_flight_cards_btn)
         return flight
 
-    def select_tariff(self, select_btn: WebElement):
+    def select_fare(self, select_btn: WebElement):
         def click_agree_button():
             agree_ba_button = WebDriverWait(self.driver, 60).until(EC.presence_of_element_located(
                 (By.XPATH, '//ba-button[contains(@class, "agree-button")]')
@@ -262,7 +262,7 @@ class Session:
         # shadow_root: ShadowRoot = WebDriverWait(select_btn, 30).until(EC.presence_of_element_located())
         # shadow_root: ShadowRoot = select_btn.shadow_root
 
-        # this line presses on select button and opens page with specified flight and tariff
+        # this line presses on select button and opens page with specified flight and fare
         self.driver.execute_script('arguments[0].shadowRoot.querySelector("button").click()', select_btn)
         self.page = 2
 
