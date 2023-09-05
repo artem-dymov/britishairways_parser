@@ -1,27 +1,16 @@
-from Session import Session
+from parser.Session import Session
 import time
 import random
 import logging
 
 import traceback
 
-from typing import List
-
-from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import Select
-from selenium.common import exceptions
-from selenium.webdriver.chrome.service import Service
 
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 from selenium.webdriver.remote.webelement import WebElement
-from selenium.webdriver.remote.shadowroot import ShadowRoot
-from selenium.webdriver.chrome.options import Options
-
-from selenium.common import exceptions as selenium_exceptions
 
 
 # logger = logging.getLogger('selenium.webdriver.remote.remote_connection')
@@ -225,7 +214,7 @@ def spam_tests(iterations):
                     fare_count += 1
             count += 1
 
-        time.sleep(5)
+        time.sleep(2)
 
 
     print('TEST ENDED')
@@ -244,4 +233,4 @@ def spam_tests(iterations):
 
 
 if __name__ == '__main__':
-    spam_tests(5)
+    spam_tests(10)

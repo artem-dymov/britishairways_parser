@@ -1,5 +1,4 @@
-from Session import Session
-import unittest
+from parser.Session import Session
 import time
 
 

@@ -25,8 +25,7 @@ from Flight import Flight
 
 class Session:
     def __init__(self):
-        user_agent = ('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
-                      'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36')
+        # user_agent = ('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36')
 
         options = Options()
 
@@ -147,6 +146,8 @@ class Session:
                 ))
                 return True
             except selenium_exceptions.NoSuchElementException:
+                return False
+            except selenium_exceptions.TimeoutException:
                 return False
 
         if self.waiting_when_page_loaded():
