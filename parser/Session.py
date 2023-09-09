@@ -20,7 +20,7 @@ import time
 import logging
 from typing import Union
 
-from Flight import Flight
+from parser.Flight import Flight
 
 
 class Session:
@@ -131,8 +131,8 @@ class Session:
                 print('Restarting startup_manual_request')
                 continue
 
-        print('\nSTARTUP STUF SUCCESSFUL\n')
-        logging.info('\nSTARTUP STUF SUCCESSFUL\n')
+        print('\nSTARTUP STUFF SUCCESSFUL\n')
+        logging.info('\nSTARTUP STUFF SUCCESSFUL\n')
 
     # returns None if no flights available
     def parse_page(self) -> Union[list[Flight], None]:
@@ -226,17 +226,20 @@ class Session:
 
         fares = {}
         for flight_card in flight_cards:
-            fare_name = WebDriverWait(flight_card, 20).until(EC.presence_of_element_located(
-                (By.XPATH, './/div[@class="flight-card-header"]//span[1]')
+            fare_name = WebDriverWait(flight_card, 60).until(EC.presence_of_element_located(
+                (By.XPATH, './/ba-content/h5[1]')
             ))
             # 'text' property of WebElement return empty string if element is not visible
             # so in this case we should use 'get_attribute("textContent")' method instead
-            fare_name = fare_name.get_attribute('textContent')
+
+            # fare_name = fare_name.get_attribute('textContent')
+            fare_name = fare_name.text
 
             fare_price = WebDriverWait(flight_card, 20).until(EC.presence_of_element_located(
-                (By.XPATH, './/div[@class="flight-card-header"]//span[2]')
+                (By.XPATH, './/ba-content/h5[2]')
             ))
-            fare_price = fare_price.get_attribute('textContent')
+            # fare_price = fare_price.get_attribute('textContent')
+            fare_price = fare_price.text
 
             fare_select_btn = WebDriverWait(flight_card, 10).until(EC.presence_of_element_located(
                 (By.XPATH, './/ba-button[contains(@class, "select-button")]')

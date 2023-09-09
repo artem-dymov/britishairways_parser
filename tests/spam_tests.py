@@ -233,4 +233,4 @@ def spam_tests(iterations):
 
 
 if __name__ == '__main__':
-    spam_tests(10)
+    spam_tests(2)

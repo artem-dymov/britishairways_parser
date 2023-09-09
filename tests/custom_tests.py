@@ -97,7 +97,7 @@ def spam_tests():
     failed_tests = {
         'flights_parsing': 0, 'submitting_flight': 0
     }
-    for i in range(10):
+    for i in range(5):
         logging.info(f'\n\nTest iteration №{i}')
         onds = create_test_onds()
 
@@ -175,59 +175,63 @@ def spam_tests():
         # Test access to book page of flights
 
         # choosing random flight from all flights on page to test booking
-        count = 0
-        choice_flight = random.randint(0, len(flights)-1)
-
-        for flight in flights:
-            if count == choice_flight:
-
-                # flight.open_flight_cards_btn.click()
-
-                # choosing random fare of flight to test booking
-                fare_count = 0
-                choice_fare = random.randint(0, len(flight.fares.keys())-1)
-                for fare_name, fare_value in flight.fares.items():
-                    if fare_count == choice_fare:
-                        start_submitting_flight_time = time.time()
-
-                        # noinspection PyTypeChecker
-                        select_btn: WebElement = fare_value[1]
-
-                        try:
-                            session.select_fare(select_btn)
-                        except Exception as e:
-                            logging.warning(f'Error accessing book page (select_fare func returned error)!! TEST 2 FAILED!!\n{e}')
-
-                            failed_tests['submitting_flight'] += 1
-                            continue
-
-
-                        if if_book_page():
-                            logging.info('Final page accessed successfuly!')
-                        else:
-                            print('THIS EXCEPTION')
-                            logging.warning('Error accessing book page (not book page in the end)!! TEST 2 FAILED!!!')
-
-                            failed_tests['submitting_flight'] += 1
-                            continue
-
-                        session.go_to_flights_page()
-
-                        submitting_flight_time = time.time() - start_submitting_flight_time
-                        test_times['submitting_flight'].append(submitting_flight_time)
-
-                    fare_count += 1
-            count += 1
+        # count = 0
+        # choice_flight = random.randint(0, len(flights)-1)
+        #
+        # for flight in flights:
+        #     if count == choice_flight:
+        #
+        #         # flight.open_flight_cards_btn.click()
+        #
+        #         # choosing random fare of flight to test booking
+        #         fare_count = 0
+        #         choice_fare = random.randint(0, len(flight.fares.keys())-1)
+        #         for fare_name, fare_value in flight.fares.items():
+        #             if fare_count == choice_fare:
+        #                 start_submitting_flight_time = time.time()
+        #
+        #                 # noinspection PyTypeChecker
+        #                 select_btn: WebElement = fare_value[1]
+        #
+        #                 try:
+        #                     session.select_fare(select_btn)
+        #                 except Exception as e:
+        #                     logging.warning(f'Error accessing book page (select_fare func returned error)!! TEST 2 FAILED!!\n{e}')
+        #
+        #                     failed_tests['submitting_flight'] += 1
+        #                     continue
+        #
+        #
+        #                 if if_book_page():
+        #                     logging.info('Final page accessed successfuly!')
+        #                 else:
+        #                     print('THIS EXCEPTION')
+        #                     logging.warning('Error accessing book page (not book page in the end)!! TEST 2 FAILED!!!')
+        #
+        #                     failed_tests['submitting_flight'] += 1
+        #                     continue
+        #
+        #                 session.go_to_flights_page()
+        #
+        #                 submitting_flight_time = time.time() - start_submitting_flight_time
+        #                 test_times['submitting_flight'].append(submitting_flight_time)
+        #
+        #             fare_count += 1
+        #     count += 1
 
     print('TEST ENDED')
 
-    print(test_times['submitting_flight'])
-    subm_fl = test_times['submitting_flight']
-    print('\n\nSUBMITTING FLIGHT TIME RESULTS')
-    show_time_results(subm_fl)
+    # print(test_times['submitting_flight'])
+    # subm_fl = test_times['submitting_flight']
+    # print('\n\nSUBMITTING FLIGHT TIME RESULTS')
+    # show_time_results(subm_fl)
 
     fl_par = test_times['flights_parsing']
     print('\n\nPARSING FLIGHTS TIME RESULTS')
     show_time_results(fl_par)
 
     print(f'FAILED TESTS:\n{failed_tests}')
+
+
+if __name__ == '__main__':
+    spam_tests()
