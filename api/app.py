@@ -57,7 +57,11 @@ class FlightResponseModel(BaseModel):
 
 @app.post("/search_flights/")
 async def search_flights(flights_request_body: FlightsRequestBody):
+
+    response = {}
+    count = 0
     for flight_search in flights_request_body.flights:
+        flights_response = []
 
         onds = (f'{flight_search.departure_airport_code}-{flight_search.arrival_airport_code}_'
                 f'{flight_search.departure_date}')
@@ -78,18 +82,28 @@ async def search_flights(flights_request_body: FlightsRequestBody):
 
         flights = session.parse_page()
 
-        flights_response = []
-        for flight in flights:
-            del flight.conditions
+        if flights:
+            for flight in flights:
+                # Conditions not parsing now so they always None
+                del flight.conditions
 
-            new_fares = {}
-            for fare_name, value in flight.fares.items():
-                new_fares.update({fare_name: value[0]})
+                # saving fares without WebElement button
+                # saving and sending response with fares with WebElement button can invoke error
+                new_fares = {}
+                for fare_name, value in flight.fares.items():
+                    new_fares.update({fare_name: value[0]})
+                flight.fares = new_fares
 
-            flight.fares = new_fares
+                # Converting Flight object with its data to BaseModel object
+                fl = FlightResponseModel(**flight.__dict__)
+                flights_response.append(fl)
 
-            fl = FlightResponseModel(**flight.__dict__)
-            flights_response.append(fl)
+            response.update({f'flight_request{count}_results': flights_response})
 
-    return {'flights': flights_response}
+        else:
+            response.update({f'flight_request{count}_results': None})
+
+        count += 1
+
+    return {'search_results': response}
 
