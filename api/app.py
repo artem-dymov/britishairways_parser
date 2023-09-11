@@ -1,6 +1,5 @@
 import time
 from typing import Union
-import uvicorn
 import asyncio
 
 import config
@@ -17,10 +16,9 @@ app = FastAPI()
 
 session = None
 if session is None:
-    print('if not')
     session = Session()
 else:
-    print('else')
+    pass
 
 session.startup_manual_request()
 
