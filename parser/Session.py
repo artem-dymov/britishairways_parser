@@ -232,14 +232,14 @@ class Session:
             # 'text' property of WebElement return empty string if element is not visible
             # so in this case we should use 'get_attribute("textContent")' method instead
 
-            # fare_name = fare_name.get_attribute('textContent')
-            fare_name = fare_name.text
+            fare_name = fare_name.get_attribute('textContent')
+            # fare_name = fare_name.text
 
             fare_price = WebDriverWait(flight_card, 20).until(EC.presence_of_element_located(
                 (By.XPATH, './/ba-content/h5[2]')
             ))
-            # fare_price = fare_price.get_attribute('textContent')
-            fare_price = fare_price.text
+            fare_price = fare_price.get_attribute('textContent')
+            # fare_price = fare_price.text
 
             fare_select_btn = WebDriverWait(flight_card, 10).until(EC.presence_of_element_located(
                 (By.XPATH, './/ba-button[contains(@class, "select-button")]')
