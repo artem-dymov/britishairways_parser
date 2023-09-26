@@ -75,7 +75,6 @@ class Session:
             element_if_page_loaded = WebDriverWait(self.driver, 90).until(EC.presence_of_element_located(
                 (By.XPATH, '//ba-button[contains(@class, "search")]')
             ))
-
             return True
         except TimeoutError:
             logging.critical('PAGE LOADING ERROR, TIME ERROR')
@@ -89,33 +88,43 @@ class Session:
         loading_marker: WebElement = WebDriverWait(self.driver, 180).until(
             EC.presence_of_element_located((By.XPATH, '//app-flight-list'))
         )
+
         self.page = 1
 
     def startup_manual_request(self):
         while True:
             try:
                 self.open_homepage()
-
                 # wait until 2 entry forms on homepage will be loaded
-                inputs = WebDriverWait(self.driver, 60).until(EC.presence_of_all_elements_located(
-                    (By.XPATH, '//input[@name="searchEntry"]')
-                ))
+                # inputs = WebDriverWait(self.driver, 60).until(EC.presence_of_all_elements_located(
+                #     (By.XPATH, '//input[@name="searchEntry"]')
+                # ))
+                # from_input = inputs[0]
+                # to_input = inputs[1]
+                lib_location_selection_from: WebElement = WebDriverWait(self.driver, 60).until(
+                                                            EC.presence_of_element_located(
+                                                            (By.XPATH, '//lib-location-selection[1]/ba-input-typeahead')
+                                                            ))
+                lib_location_selection_to: WebElement = WebDriverWait(self.driver, 60).until(
+                                                            EC.presence_of_element_located(
+                                                            (By.XPATH, '//lib-location-selection[2]/ba-input-typeahead')
+                                                            ))
 
-                from_input = inputs[0]
-                to_input = inputs[1]
+                from_input = lib_location_selection_from.shadow_root.find_element(By.CSS_SELECTOR, 'input')
+                to_input = lib_location_selection_to.shadow_root.find_element(By.CSS_SELECTOR, 'input')
 
                 from_input.send_keys('LIS')
-                WebDriverWait(self.driver, 120).until(EC.presence_of_element_located(
-                    (By.XPATH, '//div[@class="search-bar-dropdown"]/ul/li')
+                WebDriverWait(lib_location_selection_from.shadow_root, 60).until(EC.presence_of_element_located(
+                    (By.CSS_SELECTOR, 'li')
                 )).click()
 
                 to_input.send_keys('NYC')
-                WebDriverWait(self.driver, 30).until(EC.presence_of_element_located(
-                    (By.XPATH, '//div[@class="search-bar-dropdown"]/ul/li')
+                WebDriverWait(lib_location_selection_to.shadow_root, 30).until(EC.presence_of_element_located(
+                    (By.CSS_SELECTOR, 'li')
                 )).click()
 
-                search_button = WebDriverWait(self.driver, 150).until(EC.presence_of_element_located(
-                    (By.XPATH, '//button[@class="primary search-button"]'))
+                search_button = WebDriverWait(self.driver, 60).until(EC.presence_of_element_located(
+                    (By.XPATH, '//ba-button[contains(@class, "search-button hydrated")]'))
                 )
                 search_button.click()
             except selenium_exceptions.TimeoutException:

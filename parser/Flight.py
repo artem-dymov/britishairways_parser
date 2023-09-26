@@ -11,14 +11,11 @@ class Flight:
     arrival: str
     departure: str
 
-    conditions: None
-
     # fares - dict where key - fare name and value - list (price is string because contains currency sign).
     # value list contains 2 elements: 1st - price (price is string because contains currency sign),
     #                                 2nd - WebElement (button) that needed to select fare and go to next page
     def __init__(self, departure: str, arrival: str, company: str, stops_info: str, duration_summary,
-                 fares: dict[str, tuple[str, WebElement]], open_flight_cards_btn: WebElement,
-                 conditions: Union[tuple[str], None] = None):
+                 fares: dict[str, tuple[str, WebElement]], open_flight_cards_btn: WebElement):
 
 
         self.open_flight_cards_btn = open_flight_cards_btn
@@ -29,5 +26,5 @@ class Flight:
         self.arrival = arrival
         self.departure = departure
         
-        self.conditions = conditions
+        # self.conditions = conditions
 
