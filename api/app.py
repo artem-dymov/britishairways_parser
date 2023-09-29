@@ -1,3 +1,5 @@
+import time
+
 from fastapi import FastAPI
 from api.pydantic_models import *
 from api.process_session import process_session
@@ -8,14 +10,13 @@ manager = Manager()
 queue: Queue = manager.Queue()
 results = manager.list()
 
-processes = []
-for i in range(2):
+for i in range(3):
     process = Process(target=process_session, args=(queue, results,), name='i')
     print('process created')
 
-    process.daemon = True
+    # process.daemon = True
     process.start()
-    processes.append(process)
+    time.sleep(10)
 
 app = FastAPI()
 
@@ -29,6 +30,7 @@ app = FastAPI()
 
 @app.post("/search_flights/")
 async def search_flights(flights_request_body: FlightsRequestBody):
+    global manager
     global max_web_query_id
     max_web_query_id += 1
     web_query_id = max_web_query_id

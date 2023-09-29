@@ -2,3 +2,4 @@ selenium==4.11.2
 undetected_chromedriver==3.5.3
 fastapi==0.103.1
 pydantic==2.3.0
+uvicorn==0.23.2

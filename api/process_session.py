@@ -19,7 +19,7 @@ def process_session(queue: Queue, results: list[dict]):
     print('creating session')
     session = Session()
     print('starting manual request')
-    # session.startup_manual_request()
+    session.startup_manual_request()
     print('Session started')
 
     while True:

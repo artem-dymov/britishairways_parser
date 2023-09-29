@@ -35,8 +35,4 @@ for i in range(1):
 
 
 
-print(processes)
-print('for completed')
-# print('after sleeping')
-
 # processes.reverse()

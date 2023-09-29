@@ -91,25 +91,48 @@ class Session:
 
         self.page = 1
 
-    def startup_manual_request(self):
+    # startup function for orange (old) lending
+    def startup_orange(self, from_input: WebElement, to_input: WebElement):
         while True:
             try:
-                self.open_homepage()
-                # wait until 2 entry forms on homepage will be loaded
-                # inputs = WebDriverWait(self.driver, 60).until(EC.presence_of_all_elements_located(
-                #     (By.XPATH, '//input[@name="searchEntry"]')
-                # ))
-                # from_input = inputs[0]
-                # to_input = inputs[1]
-                lib_location_selection_from: WebElement = WebDriverWait(self.driver, 60).until(
-                                                            EC.presence_of_element_located(
-                                                            (By.XPATH, '//lib-location-selection[1]/ba-input-typeahead')
-                                                            ))
-                lib_location_selection_to: WebElement = WebDriverWait(self.driver, 60).until(
-                                                            EC.presence_of_element_located(
-                                                            (By.XPATH, '//lib-location-selection[2]/ba-input-typeahead')
-                                                            ))
+                from_input.send_keys('LIS')
+                WebDriverWait(self.driver, 120).until(EC.presence_of_element_located(
+                    (By.XPATH, '//div[@class="search-bar-dropdown"]/ul/li')
+                )).click()
 
+                to_input.send_keys('NYC')
+                WebDriverWait(self.driver, 30).until(EC.presence_of_element_located(
+                    (By.XPATH, '//div[@class="search-bar-dropdown"]/ul/li')
+                )).click()
+
+                search_button = WebDriverWait(self.driver, 150).until(EC.presence_of_element_located(
+                    (By.XPATH, '//button[@class="primary search-button"]'))
+                )
+                search_button.click()
+
+            except selenium_exceptions.TimeoutException:
+                logging.warning('Restarting startup_manual_request')
+                print('Restarting startup_manual_request')
+                continue
+
+            try:
+                self.waiting_when_page_loaded()
+                break
+            except selenium_exceptions.TimeoutException:
+                logging.warning('Restarting startup_manual_request')
+                print('Restarting startup_manual_request')
+                continue
+
+    # startup function for blue (new) lending
+    def startup_blue(self,  lib_location_selection_from: WebElement, lib_location_selection_to: WebElement) -> None:
+        while True:
+            try:
+                # selecting 'One way option' on website
+                WebDriverWait(self.driver, 30).until(EC.presence_of_element_located(
+                    (By.XPATH, '//option[@value="oneway"]')
+                )).click()
+
+                # input elements with departure and arrival
                 from_input = lib_location_selection_from.shadow_root.find_element(By.CSS_SELECTOR, 'input')
                 to_input = lib_location_selection_to.shadow_root.find_element(By.CSS_SELECTOR, 'input')
 
@@ -140,6 +163,33 @@ class Session:
                 print('Restarting startup_manual_request')
                 continue
 
+    def startup_manual_request(self) -> None:
+        self.open_homepage()
+
+        # lending version flag
+        lending_is_orange = None
+        # if orange lending
+        try:
+            # wait until 2 entry forms on homepage will be loaded
+            inputs = WebDriverWait(self.driver, 30).until(EC.presence_of_all_elements_located(
+                (By.XPATH, '//input[@name="searchEntry"]')
+            ))
+
+            self.startup_orange(inputs[0], inputs[1])
+            lending_is_orange = True
+        # if blue lending
+        except selenium_exceptions.TimeoutException:
+            # wait until 2 containers with entry forms on homepage will be loaded
+            lib_location_selection_from: WebElement = WebDriverWait(self.driver, 60).until(
+                EC.presence_of_element_located(
+                    (By.XPATH, '//lib-location-selection[1]/ba-input-typeahead')
+                ))
+            lib_location_selection_to: WebElement = WebDriverWait(self.driver, 60).until(
+                EC.presence_of_element_located(
+                    (By.XPATH, '//lib-location-selection[2]/ba-input-typeahead')
+                ))
+            self.startup_blue(lib_location_selection_from, lib_location_selection_to)
+
         print('\nSTARTUP STUFF SUCCESSFUL\n')
         logging.info('\nSTARTUP STUFF SUCCESSFUL\n')
 
@@ -169,7 +219,6 @@ class Session:
                     raise selenium_exceptions.TimeoutException
         else:
             raise selenium_exceptions.TimeoutException
-
 
         # it is necessary to wait until staleness
         test_flight = WebDriverWait(self.driver, 20).until(EC.presence_of_element_located(
